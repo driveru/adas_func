@@ -17,6 +17,18 @@ def interpolate(annotation_path, file_id):
 
         sequence['instance_list'].sort(key = lambda x: x['frame_number'])
 
+        inst = sequence['instance_list'][0]
+        if inst['frame_number'] != 0:
+            raise Exception('First frame is not annotated')
+
+        packet_map[0] = [{
+            'type' : inst['type'],
+            'label_file_id' : inst['label_file_id'],
+            'frame_number' : 0,
+            'number' : inst['frame_number'],
+            'points' : inst['points']
+        }]
+
         for inst in sequence['instance_list']:
             for i in range(frame_num + 1, inst['frame_number']):
                 if not points:
