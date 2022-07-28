@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from numpy.linalg import norm
 
 def select_lines(lines, width, height):
     marking = []
@@ -51,10 +52,10 @@ def intersection_perc(a, b):
     else:
         return max([0, min([(c_y1 - c_y2) / (a_y1 - a_y2), (c_y1 - c_y2) / (b_y1 - b_y2)])])
 
-def get_pairs(lines):
+def get_pairs(lines, height):
     pos, neg = get_groups(sorted(lines, key = lambda x: x[4]))
-    pairs = get_pairs_by_group(pos)
-    pairs += get_pairs_by_group(neg)
+    pairs = get_pairs_by_group(unite_lines(pos, height))
+    pairs += get_pairs_by_group(unite_lines(neg, height))
     return pairs
 
 def get_pairs_by_group(group, intersection_perc_threshold = 0.8):
@@ -65,7 +66,7 @@ def get_pairs_by_group(group, intersection_perc_threshold = 0.8):
             if i in block or j in block:
                 continue
 
-            if 20 < abs(group[i][4] - group[j][4]) < 40:
+            if 10 < min_dist_between_lines(group[i], group[j]) < 20:
                 perc = intersection_perc(group[i], group[j])
                 if perc > intersection_perc_threshold:
                     pairs.append([group[i], group[j]])
@@ -86,8 +87,8 @@ def get_groups(lines):
 
     return (pos, neg)
 
-def get_polygons(lines):
-    pairs = get_pairs(lines)
+def get_polygons(lines, height):
+    pairs = get_pairs(lines, height)
 
     polygons = []
     for pair in pairs:
@@ -110,3 +111,99 @@ def sort_points(points):
         points[2], points[3] = points[3], points[2]
 
     return points
+
+
+def unite_lines(lines, height):
+    flag = True
+
+    while flag:
+        temp = []
+        block = set()
+        flag = False
+        for i in range(len(lines)):
+            for j in range(i + 1, len(lines)):
+                if (i in block) or (j in block):
+                    continue
+
+                a = lines[i]
+                b = lines[j]
+                perc = intersection_perc(a, b)
+                if perc < 0.01:
+                    continue
+
+                a_x1, a_y1, a_x2, a_y2, a_x, a_k = a
+                b_x1, b_y1, b_x2, b_y2, b_x, b_k = b
+
+                if abs(a_k) < abs(b_k * 0.98) or abs(b_k * 1.02) < abs(a_k):
+                    continue
+
+                if min_dist_between_lines(a, b) > 3:
+                    continue
+
+                flag = True
+                block.add(i)
+                block.add(j)
+                pts = sorted([[a_x1, a_y1], [a_x2, a_y2], [b_x1, b_y1], [b_x2, b_y2]], key = lambda x: x[1])
+                c_x1 = pts[0][0]
+                c_y1 = pts[0][1]
+                c_x2 = pts[3][0]
+                c_y2 = pts[3][1]
+                temp.append([c_x1, c_y1, c_x2, c_y2, get_k([[c_x1, c_y1, c_x2, c_y2]]), get_x([[c_x1, c_y1, c_x2, c_y2]], height)])
+
+        for i in range(len(lines)):
+            if i in block:
+                continue
+
+            temp.append(lines[i])
+
+        lines = temp.copy()
+
+    return lines
+
+def distance_between_point_and_lines(line, point):
+    p1, p2 = line
+    p1 = np.asarray(p1)
+    p2 = np.asarray(p2)
+    point = np.asarray(point)
+    d = norm(np.cross(p2 - p1, p1 - point)) / norm(p2 - p1)
+
+    return d
+
+
+def min_dist_between_lines(a, b):
+    is_intersect = check_intersection(a, b)
+    if is_intersect:
+        return 0
+
+    a_x1, a_y1, a_x2, a_y2, a_x, a_k = a
+    b_x1, b_y1, b_x2, b_y2, b_x, b_k = b
+
+    dist = min([
+        distance_between_point_and_lines([[a_x1, a_y1], [a_x2, a_y2]], [b_x1, b_y1]),
+        distance_between_point_and_lines([[a_x1, a_y1], [a_x2, a_y2]], [b_x2, b_y2]),
+        distance_between_point_and_lines([[b_x1, b_y1], [b_x2, b_y2]], [a_x1, a_y1]),
+        distance_between_point_and_lines([[b_x1, b_y1], [b_x2, b_y2]], [a_x2, a_y2])
+    ])
+
+    return dist
+
+def check_intersection(a, b):
+    # y = kx + c
+    a_x1, a_y1, a_x2, a_y2, a_x, a_k = a
+    b_x1, b_y1, b_x2, b_y2, b_x, b_k = b
+
+    if a_k == b_k:
+        return False
+
+    I = [max( min(a_x1, a_x2), min(b_x1, b_x2) ),
+          min( max(a_x1, a_x2), max(b_x1, b_x2) )]
+
+    a_c = a_y1 - a_k * a_x1
+    b_c = b_y1 - b_k * b_x1
+
+    root = (a_c - b_c) / (b_k - a_k)
+
+    if I[0] < root < I[1]:
+        return True
+
+    return False
