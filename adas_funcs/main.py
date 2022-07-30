@@ -1,5 +1,10 @@
+from lines import *
+from convert import *
+from crop_roi import crop_area
+from interpolation import interpolate
 import cv2
 import numpy as np
+import time
 
 def nothing(*arg):
         pass
@@ -28,27 +33,41 @@ kernel_shape = cv2.MORPH_ELLIPSE
 #loading video
 cap = cv2.VideoCapture(r'C:\Users\79042\Downloads\видео\cloudy_1.mp4')
 #loading image
-img = cv2.imread(r'C:\Users\79042\Desktop\Screenshot_3.png')
+img_croped = cv2.imread(r'C:\Users\79042\Desktop\Screenshot_3.png')
 
-#HoughLinesP setting
+annotation_path = r'C:\Users\79042\Downloads\diffgram_annotation.json'
+file_id = 197
+
+packet_map = interpolate(annotation_path, file_id)
+points_map = convert_points(packet_map)
+frame_number = 0
+
+
+#HoughLinesP settings
 rho = 1  # distance resolution in pixels of the Hough grid
 theta = np.pi / 180  # angular resolution in radians of the Hough grid
 threshold = 25  # minimum number of votes (intersections in Hough grid cell)
 min_line_length = 80  # minimum number of pixels making up a line
 max_line_gap = 15  # maximum gap in pixels between connectable line segments
-line_image = np.copy(img) * 0  # creating a blank to draw lines on
 
 cv2.resizeWindow("settings", 480, 100)
 
 while True:
     #uncoment to work with video
-    #_, img = cap.read()
+    _, img = cap.read()
 
+    if frame_number in points_map.keys():
+        img_croped = crop_area(img, points_map[frame_number])
+
+
+    frame_number += 1
+    #flip image to work with coordinates
+    img_flip = cv2.flip(img_croped, 0)
     #convert to hls color space
-    hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+    hls = cv2.cvtColor(img_flip, cv2.COLOR_BGR2HLS)
 
     #creting a copy of image to draw lines
-    img_copy = img.copy()
+    img_copy = img_flip.copy()
 
     #setting the inRange params up
     h1 = cv2.getTrackbarPos('h1', 'settings')
@@ -93,32 +112,28 @@ while True:
     lines = cv2.HoughLinesP(erode_dst, rho, theta, threshold, np.array([]),
                         min_line_length, max_line_gap)
 
-    if lines is None:
-        lines = []
+    height, width, _ = img_flip.shape
+    marking = select_lines(lines, 3200, height)
+    polygons = get_polygons(marking, height)
 
-    #drawing lines
-    for line in lines:
-        for x1,y1,x2,y2 in line:
-            cv2.line(img_copy, (x1,y1),(x2,y2),(255,0,0),2)
 
-    #contours
-    '''
-    contours, hierarchy = cv2.findContours(erode_dst, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-    marking = []
-    for contour in contours:
-        if cv2.contourArea(contour) > 100:
-            cv2.polylines(img_copy, contour, True, (0,255,255), 1)
-            marking.append(contour)
-    '''
+    #drawing polygons
+    cv2.polylines(img_copy, polygons, True, (255, 0, 255), 2)
 
     #resizing and printing images
-    cv2.imshow('img', cv2.resize(img_copy, (1600, 900)))
-    cv2.imshow('Canny', cv2.resize(canny, (1600, 900)))
-    cv2.imshow('bitwise', cv2.resize(img_bitwise, (1600, 900)))
-    cv2.imshow('thresh', cv2.resize(thresh, (1600, 900)))
-    cv2.imshow('erode', cv2.resize(erode_dst, (1600, 900)))
-
+    #cv2.imshow('img', cv2.resize(img_copy, (1600, 900)))
+    cv2.imshow('img', cv2.flip(img_copy, 0))
+    #cv2.imshow('img', cv2.resize(img, (1600, 900)))
+    #cv2.imshow('bitwise', cv2.resize(img_bitwise, (1600, 900)))
+    #cv2.imshow('thresh', cv2.resize(thresh, (1600, 900)))
+    #cv2.imshow('erode', cv2.resize(erode_dst, (1600, 900)))
+    #cv2.imshow('croped', img_croped)
+    #cv2.imshow('Canny', cv2.flip(canny, 0))
+    #cv2.imshow('bitwise', cv2.flip(img_bitwise, 0))
+    #cv2.imshow('thresh', cv2.flip(thresh, 0))
+    #cv2.imshow('dilation', cv2.flip(dilatation_dst, 0))
+    #cv2.imshow('erode', cv2.flip(erode_dst, 0))
+    time.sleep(1)
 
     ch = cv2.waitKey(5)
     if ch == 27:
