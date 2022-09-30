@@ -58,7 +58,7 @@ def get_pairs(lines, height):
     pairs += get_pairs_by_group(unite_lines(neg, height))
     return pairs
 
-def get_pairs_by_group(group, intersection_perc_threshold = 0.8):
+def get_pairs_by_group(group, intersection_perc_threshold = 0.65):
     pairs = []
     block = set()
     for i in range(len(group)):
@@ -75,6 +75,7 @@ def get_pairs_by_group(group, intersection_perc_threshold = 0.8):
 
     return pairs
 
+#деление линий на группы относительно положения автомобиля (слева, справа)
 def get_groups(lines):
     pos = []
     neg = []
@@ -87,6 +88,7 @@ def get_groups(lines):
 
     return (pos, neg)
 
+#
 def get_polygons(lines, height):
     pairs = get_pairs(lines, height)
 
@@ -99,17 +101,18 @@ def get_polygons(lines, height):
 
         points = sort_points(points)
 
-        polygons.append(np.array([points], np.int32))
+        polygons.append(np.array(points, np.int32))
 
     return polygons
 
+#сортировка вершин четырехугольника для получения выпуклого многоугольника
 def sort_points(points):
-    points.sort(key = lambda x: x[1])
-    if points[0][0] < points[1][0]:
-        points[0], points[1] = points[1], points[0]
-    if points[3][0] < points[2][0]:
-        points[2], points[3] = points[3], points[2]
+    points.sort(key = lambda x: x[1], reverse=True)
 
+    a = [points[0][0], points[0][1], points[2][0], points[2][1], None, None]
+    b = [points[1][0], points[1][1], points[3][0], points[3][1], None, None]
+    if not check_intersection(a, b):
+        points[1], points[0] = points[0], points[1]
     return points
 
 
@@ -160,6 +163,7 @@ def unite_lines(lines, height):
 
     return lines
 
+#расстояние между отрезком и точкой
 def distance_between_point_and_lines(line, point):
     p1, p2 = line
     p1 = np.asarray(p1)
@@ -169,7 +173,7 @@ def distance_between_point_and_lines(line, point):
 
     return d
 
-
+#подсчет минимального расстояния между парой отрезков
 def min_dist_between_lines(a, b):
     is_intersect = check_intersection(a, b)
     if is_intersect:
@@ -187,10 +191,16 @@ def min_dist_between_lines(a, b):
 
     return dist
 
+#проверка пересекаются ли отрезки a, b
 def check_intersection(a, b):
     # y = kx + c
-    a_x1, a_y1, a_x2, a_y2, a_x, a_k = a
-    b_x1, b_y1, b_x2, b_y2, b_x, b_k = b
+    a_x1, a_y1, a_x2, a_y2, _, a_k = a
+    b_x1, b_y1, b_x2, b_y2, _, b_k = b
+
+    if not a_k:
+        a_k = get_k([[a_x1, a_y1, a_x2, a_y2]])
+    if not b_k:
+        b_k = get_k([[b_x1, b_y1, b_x2, b_y2]])
 
     if a_k == b_k:
         return False
@@ -203,7 +213,4 @@ def check_intersection(a, b):
 
     root = (a_c - b_c) / (b_k - a_k)
 
-    if I[0] < root < I[1]:
-        return True
-
-    return False
+    return I[0] < root < I[1]
