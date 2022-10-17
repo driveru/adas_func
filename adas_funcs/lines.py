@@ -2,6 +2,7 @@ import math
 import numpy as np
 from numpy.linalg import norm
 
+#базовая фильтрация линий по углу наклона и точке сходимости
 def select_lines(lines, width, height):
     marking = []
 
@@ -17,6 +18,8 @@ def select_lines(lines, width, height):
 
 def get_k(line):
     x1, y1, x2, y2 = line[0]
+    if x2 == x1:
+        return float('inf')
     k = (y2 - y1) / (x2 - x1)
     return k
 
@@ -52,26 +55,28 @@ def intersection_perc(a, b):
     else:
         return max([0, min([(c_y1 - c_y2) / (a_y1 - a_y2), (c_y1 - c_y2) / (b_y1 - b_y2)])])
 
-def get_pairs(lines, height):
+def get_pairs(lines, img):
     pos, neg = get_groups(sorted(lines, key = lambda x: x[4]))
-    pairs = get_pairs_by_group(unite_lines(pos, height))
-    pairs += get_pairs_by_group(unite_lines(neg, height))
+    height, _ = img.shape
+    pairs = get_pairs_by_group(unite_lines(pos, height), img)
+    pairs += get_pairs_by_group(unite_lines(neg, height), img)
     return pairs
 
-def get_pairs_by_group(group, intersection_perc_threshold = 0.65):
+#делим прямые по парам для образования четырехугольника
+def get_pairs_by_group(group, img, intersection_perc_threshold = 0.65, white_pixels_threshold = 0.15):
     pairs = []
-    block = set()
+    used = set()
     for i in range(len(group)):
         for j in range(i + 1, len(group)):
-            if i in block or j in block:
+            if i in used or j in used:
                 continue
 
-            if 10 < min_dist_between_lines(group[i], group[j]) < 20:
+            if 10 < min_dist_between_lines(group[i], group[j]) < 20 and get_white_pixels_perc(group[i], group[j], img) < white_pixels_threshold:
                 perc = intersection_perc(group[i], group[j])
                 if perc > intersection_perc_threshold:
                     pairs.append([group[i], group[j]])
-                    block.add(i)
-                    block.add(j)
+                    used.add(i)
+                    used.add(j)
 
     return pairs
 
@@ -89,8 +94,8 @@ def get_groups(lines):
     return (pos, neg)
 
 #
-def get_polygons(lines, height):
-    pairs = get_pairs(lines, height)
+def get_polygons(lines, img):
+    pairs = get_pairs(lines, img)
 
     polygons = []
     for pair in pairs:
@@ -105,6 +110,7 @@ def get_polygons(lines, height):
 
     return polygons
 
+
 #сортировка вершин четырехугольника для получения выпуклого многоугольника
 def sort_points(points):
     points.sort(key = lambda x: x[1], reverse=True)
@@ -115,7 +121,7 @@ def sort_points(points):
         points[1], points[0] = points[0], points[1]
     return points
 
-
+#объединяем похожие линии в одну
 def unite_lines(lines, height):
     flag = True
 
@@ -214,3 +220,46 @@ def check_intersection(a, b):
     root = (a_c - b_c) / (b_k - a_k)
 
     return I[0] < root < I[1]
+
+
+#ищем область для подсчета отношения белых и черных пикселей
+def create_bounding_box(a, b):
+    a_x1, a_y1, a_x2, a_y2, _, _ = a
+    b_x1, b_y1, b_x2, b_y2, _, _ = b
+
+    left_upper = [math.ceil(min([a_x1, a_x2, b_x1, b_x2])), math.ceil(max([a_y1, a_y2, b_y1, b_y2]))]
+    right_bottom = [math.ceil(max([a_x1, a_x2, b_x1, b_x2])), math.ceil(min([a_y1, a_y2, b_y1, b_y2]))]
+
+    return [left_upper, right_bottom]
+
+
+def is_inside(point, vertices):
+    cnt = 0
+    vertices = list(vertices)
+    vertices.append(vertices[0])
+
+    a = [point[0], point[1], 0, point[1], None, None]
+    for i in range(1, len(vertices)):
+        b = [vertices[i - 1][0], vertices[i - 1][1], vertices[i][0], vertices[i][1], None, None]
+        if check_intersection(a, b):
+            cnt += 1
+
+    return cnt % 2 == 1
+
+
+def get_white_pixels_perc(a, b, img):
+    left_upper, right_bottom = create_bounding_box(a, b)
+
+    a_x1, a_y1, a_x2, a_y2, _, _ = a
+    b_x1, b_y1, b_x2, b_y2, _, _ = b
+    points = sort_points([[a_x1, a_y1], [a_x2, a_y2], [b_x1, b_y1], [b_x2, b_y2]])
+    dark = white = 0
+    for i in range(left_upper[0], right_bottom[0]):
+        for j in range(right_bottom[1], left_upper[1]):
+            if is_inside([i, j], points):
+                if img[j][i] == 0:
+                    dark += 1
+                else:
+                    white += 1
+
+    return white / (white + dark)
