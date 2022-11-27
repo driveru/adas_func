@@ -16,6 +16,7 @@ def select_lines(lines, width, height):
 
     return marking
 
+#коэфициент k в уравнении прямой: y = kx + b
 def get_k(line):
     x1, y1, x2, y2 = line[0]
     if x2 == x1:
@@ -23,37 +24,35 @@ def get_k(line):
     k = (y2 - y1) / (x2 - x1)
     return k
 
+#координата пересечения прямой с верхней границей изображения
 def get_x(line, height):
     x1, y1, x2, y2 = line[0]
+
+    #прямая параллельна оси ОХ
+    if y2 == y1:
+        return float('inf')
+
+    #прямая параллельна оси OY
+    if x1 == x2:
+        return x1
+
     x = (x1 / (x2 - x1) + (height - y1) / (y2 - y1)) * (x2 - x1)
     return x
 
+# TODO: rename to 'overlaping_percentage'
 def intersection_perc(a, b):
     _, a_y1, _, a_y2, _, _ = a
     _, b_y1, _, b_y2, _, _ = b
 
+    #we want a_y1 > a_y2 and b_y1 > b_y2
     if a_y1 < a_y2:
         a_y1, a_y2 = a_y2, a_y1
     if b_y1 < b_y2:
         b_y1, b_y2 = b_y2, b_y1
 
-    c_y1, c_y2 = [0, 0]
-    if b_y2 < a_y1 < b_y1:
-        c_y1 = a_y1
-        if a_y2 < b_y2:
-            c_y2 = b_y2
-        else:
-            c_y2 = a_y2
-    elif a_y1 > b_y1:
-        c_y1 = b_y1
-        if b_y2 < a_y2 < b_y1:
-            c_y2 = a_y2
-        elif a_y2 < b_y2:
-            c_y2 = b_y2
-    if c_y1 * c_y2 == 0:
-        return 0
-    else:
-        return max([0, min([(c_y1 - c_y2) / (a_y1 - a_y2), (c_y1 - c_y2) / (b_y1 - b_y2)])])
+    overlap = max(0, min(a_y1, b_y1) - max(a_y2, b_y2))
+    return max([0, min([overlap / (a_y1 - a_y2), overlap / (b_y1 - b_y2)])])
+
 
 def get_pairs(lines, img):
     pos, neg = get_groups(sorted(lines, key = lambda x: x[4]))
@@ -71,7 +70,7 @@ def get_pairs_by_group(group, img, intersection_perc_threshold = 0.65, white_pix
             if i in used or j in used:
                 continue
 
-            if 10 < min_dist_between_lines(group[i], group[j]) < 20 and get_white_pixels_perc(group[i], group[j], img) < white_pixels_threshold:
+            if 10 < min_dist_between_lines(group[i], group[j]) < 25:# and get_white_pixels_perc(group[i], group[j], img) < white_pixels_threshold:
                 perc = intersection_perc(group[i], group[j])
                 if perc > intersection_perc_threshold:
                     pairs.append([group[i], group[j]])
@@ -137,16 +136,16 @@ def unite_lines(lines, height):
                 a = lines[i]
                 b = lines[j]
                 perc = intersection_perc(a, b)
-                if perc < 0.01:
+                if perc < 0.01: #0.01
                     continue
 
                 a_x1, a_y1, a_x2, a_y2, a_x, a_k = a
                 b_x1, b_y1, b_x2, b_y2, b_x, b_k = b
 
-                if abs(a_k) < abs(b_k * 0.98) or abs(b_k * 1.02) < abs(a_k):
+                if abs(a_k) < abs(b_k * 0.97) or abs(b_k * 1.03) < abs(a_k):
                     continue
 
-                if min_dist_between_lines(a, b) > 3:
+                if min_dist_between_lines(a, b) > 5:
                     continue
 
                 flag = True
@@ -157,7 +156,7 @@ def unite_lines(lines, height):
                 c_y1 = pts[0][1]
                 c_x2 = pts[3][0]
                 c_y2 = pts[3][1]
-                temp.append([c_x1, c_y1, c_x2, c_y2, get_k([[c_x1, c_y1, c_x2, c_y2]]), get_x([[c_x1, c_y1, c_x2, c_y2]], height)])
+                temp.append([c_x1, c_y1, c_x2, c_y2, get_x([[c_x1, c_y1, c_x2, c_y2]], height), get_k([[c_x1, c_y1, c_x2, c_y2]])])
 
         for i in range(len(lines)):
             if i in block:
