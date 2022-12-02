@@ -10,7 +10,7 @@ def select_lines(lines, width, height):
         k = get_k(line)
         x = get_x(line, height)
         x_half = get_x(line, height / 2)
-        if (0.5 < abs(k) < 1.3) and (900 < x < 1200):
+        if (0.67 < abs(k) < 1.2) and (900 < x < 1200):
             x1, y1, x2, y2 = line[0]
             marking.append([x1, y1, x2, y2, x_half, k])
 
@@ -39,8 +39,8 @@ def get_x(line, height):
     x = (x1 / (x2 - x1) + (height - y1) / (y2 - y1)) * (x2 - x1)
     return x
 
-# TODO: rename to 'overlaping_percentage'
-def intersection_perc(a, b):
+
+def overlaping_perc(a, b):
     _, a_y1, _, a_y2, _, _ = a
     _, b_y1, _, b_y2, _, _ = b
 
@@ -55,14 +55,16 @@ def intersection_perc(a, b):
 
 
 def get_pairs(lines, img):
-    pos, neg = get_groups(sorted(lines, key = lambda x: x[4]))
+    #pos, neg = get_groups(sorted(lines, key = lambda x: x[4]))
+    #pos, neg = get_groups(sorted(lines, key = lambda x: get_x([x[:4]], 0)))
+    pos, neg = get_groups(sorted(lines, key = lambda x: min(x[0], x[2]) + abs(x[0] - x[2]) // 2))
     height, _ = img.shape
     pairs = get_pairs_by_group(unite_lines(pos, height), img)
     pairs += get_pairs_by_group(unite_lines(neg, height), img)
     return pairs
 
 #делим прямые по парам для образования четырехугольника
-def get_pairs_by_group(group, img, intersection_perc_threshold = 0.65, white_pixels_threshold = 0.15):
+def get_pairs_by_group(group, img, overlaping_perc_threshold = 0.50, white_pixels_threshold = 0.15):
     pairs = []
     used = set()
     for i in range(len(group)):
@@ -70,9 +72,9 @@ def get_pairs_by_group(group, img, intersection_perc_threshold = 0.65, white_pix
             if i in used or j in used:
                 continue
 
-            if 10 < min_dist_between_lines(group[i], group[j]) < 25:# and get_white_pixels_perc(group[i], group[j], img) < white_pixels_threshold:
-                perc = intersection_perc(group[i], group[j])
-                if perc > intersection_perc_threshold:
+            if 10 < min_dist_between_lines(group[i], group[j]) < 25 and get_white_pixels_perc(group[i], group[j], img) < white_pixels_threshold:
+                perc = overlaping_perc(group[i], group[j])
+                if perc > overlaping_perc_threshold:
                     pairs.append([group[i], group[j]])
                     used.add(i)
                     used.add(j)
@@ -84,7 +86,7 @@ def get_groups(lines):
     pos = []
     neg = []
     for line in lines: # line = [x1, y1, x2, y2, x, k]
-        _, _, _, _, _, k = line
+        k = line[5]
         if k > 0:
             pos.append(line)
         else:
@@ -135,14 +137,14 @@ def unite_lines(lines, height):
 
                 a = lines[i]
                 b = lines[j]
-                perc = intersection_perc(a, b)
+                perc = overlaping_perc(a, b)
                 if perc < 0.01: #0.01
                     continue
 
-                a_x1, a_y1, a_x2, a_y2, a_x, a_k = a
-                b_x1, b_y1, b_x2, b_y2, b_x, b_k = b
+                a_x1, a_y1, a_x2, a_y2, _, a_k = a
+                b_x1, b_y1, b_x2, b_y2, _, b_k = b
 
-                if abs(a_k) < abs(b_k * 0.97) or abs(b_k * 1.03) < abs(a_k):
+                if abs(a_k) < abs(b_k * 0.90) or abs(b_k * 1.1) < abs(a_k):
                     continue
 
                 if min_dist_between_lines(a, b) > 5:
