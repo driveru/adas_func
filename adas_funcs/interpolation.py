@@ -29,6 +29,9 @@ def interpolate(annotation_path, file_id):
             'points' : inst['points']
         }]
 
+        type = ''
+        label_file_id = ''
+
         for inst in sequence['instance_list']:
             for i in range(frame_num + 1, inst['frame_number']):
                 if not points:

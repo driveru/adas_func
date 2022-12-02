@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 class Frame:
     def __init__(self, frame_id, instance_list):
         self.frame_id = frame_id
