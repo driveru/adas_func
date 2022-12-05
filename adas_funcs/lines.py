@@ -2,7 +2,8 @@ import math
 import numpy as np
 from numpy.linalg import norm
 
-#базовая фильтрация линий по углу наклона и точке сходимости
+
+# базовая фильтрация линий по углу наклона и точке сходимости
 def select_lines(lines, width, height):
     marking = []
 
@@ -16,23 +17,25 @@ def select_lines(lines, width, height):
 
     return marking
 
-#коэфициент k в уравнении прямой: y = kx + b
+
+# коэфициент k в уравнении прямой: y = kx + b
 def get_k(line):
     x1, y1, x2, y2 = line[0]
     if x2 == x1:
-        return float('inf')
+        return float("inf")
     k = (y2 - y1) / (x2 - x1)
     return k
 
-#координата пересечения прямой с верхней границей изображения
+
+# координата пересечения прямой с верхней границей изображения
 def get_x(line, height):
     x1, y1, x2, y2 = line[0]
 
-    #прямая параллельна оси ОХ
+    # прямая параллельна оси ОХ
     if y2 == y1:
-        return float('inf')
+        return float("inf")
 
-    #прямая параллельна оси OY
+    # прямая параллельна оси OY
     if x1 == x2:
         return x1
 
@@ -44,7 +47,7 @@ def overlaping_perc(a, b):
     _, a_y1, _, a_y2, _, _ = a
     _, b_y1, _, b_y2, _, _ = b
 
-    #we want a_y1 > a_y2 and b_y1 > b_y2
+    # we want a_y1 > a_y2 and b_y1 > b_y2
     if a_y1 < a_y2:
         a_y1, a_y2 = a_y2, a_y1
     if b_y1 < b_y2:
@@ -55,16 +58,20 @@ def overlaping_perc(a, b):
 
 
 def get_pairs(lines, img):
-    #pos, neg = get_groups(sorted(lines, key = lambda x: x[4]))
-    #pos, neg = get_groups(sorted(lines, key = lambda x: get_x([x[:4]], 0)))
-    pos, neg = get_groups(sorted(lines, key = lambda x: min(x[0], x[2]) + abs(x[0] - x[2]) // 2))
+    pos, neg = get_groups(
+        sorted(lines, key = lambda x: min(x[0], x[2]) + abs(x[0] - x[2]) // 2)
+    )
+
     height, _ = img.shape
     pairs = get_pairs_by_group(unite_lines(pos, height), img)
     pairs += get_pairs_by_group(unite_lines(neg, height), img)
     return pairs
 
-#делим прямые по парам для образования четырехугольника
-def get_pairs_by_group(group, img, overlaping_perc_threshold = 0.50, white_pixels_threshold = 0.15):
+
+# делим прямые по парам для образования четырехугольника
+def get_pairs_by_group(
+    group, img, overlaping_perc_threshold = 0.50, white_pixels_threshold = 0.15
+):
     pairs = []
     used = set()
     for i in range(len(group)):
@@ -72,7 +79,11 @@ def get_pairs_by_group(group, img, overlaping_perc_threshold = 0.50, white_pixel
             if i in used or j in used:
                 continue
 
-            if 10 < min_dist_between_lines(group[i], group[j]) < 25 and get_white_pixels_perc(group[i], group[j], img) < white_pixels_threshold:
+            if (
+                10 < min_dist_between_lines(group[i], group[j]) < 25
+                and get_white_pixels_perc(group[i], group[j], img)
+                < white_pixels_threshold
+            ):
                 perc = overlaping_perc(group[i], group[j])
                 if perc > overlaping_perc_threshold:
                     pairs.append([group[i], group[j]])
@@ -81,11 +92,13 @@ def get_pairs_by_group(group, img, overlaping_perc_threshold = 0.50, white_pixel
 
     return pairs
 
-#деление линий на группы относительно положения автомобиля (слева, справа)
+
+# деление линий на группы относительно положения автомобиля (слева, справа)
 def get_groups(lines):
     pos = []
     neg = []
-    for line in lines: # line = [x1, y1, x2, y2, x, k]
+    # line = [x1, y1, x2, y2, x, k]
+    for line in lines:
         k = line[5]
         if k > 0:
             pos.append(line)
@@ -93,6 +106,7 @@ def get_groups(lines):
             neg.append(line)
 
     return (pos, neg)
+
 
 #
 def get_polygons(lines, img):
@@ -112,9 +126,9 @@ def get_polygons(lines, img):
     return polygons
 
 
-#сортировка вершин четырехугольника для получения выпуклого многоугольника
+# сортировка вершин четырехугольника для получения выпуклого многоугольника
 def sort_points(points):
-    points.sort(key = lambda x: x[1], reverse=True)
+    points.sort(key=lambda x: x[1], reverse=True)
 
     a = [points[0][0], points[0][1], points[2][0], points[2][1], None, None]
     b = [points[1][0], points[1][1], points[3][0], points[3][1], None, None]
@@ -122,7 +136,8 @@ def sort_points(points):
         points[1], points[0] = points[0], points[1]
     return points
 
-#объединяем похожие линии в одну
+
+# объединяем похожие линии в одну
 def unite_lines(lines, height):
     flag = True
 
@@ -138,7 +153,7 @@ def unite_lines(lines, height):
                 a = lines[i]
                 b = lines[j]
                 perc = overlaping_perc(a, b)
-                if perc < 0.01: #0.01
+                if perc < 0.01:
                     continue
 
                 a_x1, a_y1, a_x2, a_y2, _, a_k = a
@@ -153,12 +168,24 @@ def unite_lines(lines, height):
                 flag = True
                 block.add(i)
                 block.add(j)
-                pts = sorted([[a_x1, a_y1], [a_x2, a_y2], [b_x1, b_y1], [b_x2, b_y2]], key = lambda x: x[1])
+                pts = sorted(
+                    [[a_x1, a_y1], [a_x2, a_y2], [b_x1, b_y1], [b_x2, b_y2]],
+                     key = lambda x: x[1]
+                )
                 c_x1 = pts[0][0]
                 c_y1 = pts[0][1]
                 c_x2 = pts[3][0]
                 c_y2 = pts[3][1]
-                temp.append([c_x1, c_y1, c_x2, c_y2, get_x([[c_x1, c_y1, c_x2, c_y2]], height), get_k([[c_x1, c_y1, c_x2, c_y2]])])
+                temp.append(
+                    [
+                        c_x1,
+                        c_y1,
+                        c_x2,
+                        c_y2,
+                        get_x([[c_x1, c_y1, c_x2, c_y2]], height),
+                        get_k([[c_x1, c_y1, c_x2, c_y2]])
+                    ]
+                )
 
         for i in range(len(lines)):
             if i in block:
@@ -170,7 +197,8 @@ def unite_lines(lines, height):
 
     return lines
 
-#расстояние между отрезком и точкой
+
+# расстояние между отрезком и точкой
 def distance_between_point_and_lines(line, point):
     p1, p2 = line
     p1 = np.asarray(p1)
@@ -180,7 +208,8 @@ def distance_between_point_and_lines(line, point):
 
     return d
 
-#подсчет минимального расстояния между парой отрезков
+
+# подсчет минимального расстояния между парой отрезков
 def min_dist_between_lines(a, b):
     is_intersect = check_intersection(a, b)
     if is_intersect:
@@ -189,16 +218,27 @@ def min_dist_between_lines(a, b):
     a_x1, a_y1, a_x2, a_y2, a_x, a_k = a
     b_x1, b_y1, b_x2, b_y2, b_x, b_k = b
 
-    dist = min([
-        distance_between_point_and_lines([[a_x1, a_y1], [a_x2, a_y2]], [b_x1, b_y1]),
-        distance_between_point_and_lines([[a_x1, a_y1], [a_x2, a_y2]], [b_x2, b_y2]),
-        distance_between_point_and_lines([[b_x1, b_y1], [b_x2, b_y2]], [a_x1, a_y1]),
-        distance_between_point_and_lines([[b_x1, b_y1], [b_x2, b_y2]], [a_x2, a_y2])
-    ])
+    dist = min(
+        [
+            distance_between_point_and_lines(
+                [[a_x1, a_y1], [a_x2, a_y2]], [b_x1, b_y1]
+            ),
+            distance_between_point_and_lines(
+                [[a_x1, a_y1], [a_x2, a_y2]], [b_x2, b_y2]
+            ),
+            distance_between_point_and_lines(
+                [[b_x1, b_y1], [b_x2, b_y2]], [a_x1, a_y1]
+            ),
+            distance_between_point_and_lines(
+                [[b_x1, b_y1], [b_x2, b_y2]], [a_x2, a_y2]
+            )
+        ]
+    )
 
     return dist
 
-#проверка пересекаются ли отрезки a, b
+
+# проверка пересекаются ли отрезки a, b
 def check_intersection(a, b):
     # y = kx + c
     a_x1, a_y1, a_x2, a_y2, _, a_k = a
@@ -212,8 +252,7 @@ def check_intersection(a, b):
     if a_k == b_k:
         return False
 
-    I = [max( min(a_x1, a_x2), min(b_x1, b_x2) ),
-          min( max(a_x1, a_x2), max(b_x1, b_x2) )]
+    I = [max(min(a_x1, a_x2), min(b_x1, b_x2)), min(max(a_x1, a_x2), max(b_x1, b_x2))]
 
     a_c = a_y1 - a_k * a_x1
     b_c = b_y1 - b_k * b_x1
@@ -223,13 +262,19 @@ def check_intersection(a, b):
     return I[0] < root < I[1]
 
 
-#ищем область для подсчета отношения белых и черных пикселей
+# ищем область для подсчета отношения белых и черных пикселей
 def create_bounding_box(a, b):
     a_x1, a_y1, a_x2, a_y2, _, _ = a
     b_x1, b_y1, b_x2, b_y2, _, _ = b
 
-    left_upper = [math.ceil(min([a_x1, a_x2, b_x1, b_x2])), math.ceil(max([a_y1, a_y2, b_y1, b_y2]))]
-    right_bottom = [math.ceil(max([a_x1, a_x2, b_x1, b_x2])), math.ceil(min([a_y1, a_y2, b_y1, b_y2]))]
+    left_upper = [
+        math.ceil(min([a_x1, a_x2, b_x1, b_x2])),
+        math.ceil(max([a_y1, a_y2, b_y1, b_y2]))
+    ]
+    right_bottom = [
+        math.ceil(max([a_x1, a_x2, b_x1, b_x2])),
+        math.ceil(min([a_y1, a_y2, b_y1, b_y2]))
+    ]
 
     return [left_upper, right_bottom]
 
@@ -241,7 +286,14 @@ def is_inside(point, vertices):
 
     a = [point[0], point[1], 0, point[1], None, None]
     for i in range(1, len(vertices)):
-        b = [vertices[i - 1][0], vertices[i - 1][1], vertices[i][0], vertices[i][1], None, None]
+        b = [
+            vertices[i - 1][0],
+            vertices[i - 1][1],
+            vertices[i][0],
+            vertices[i][1],
+            None,
+            None
+        ]
         if check_intersection(a, b):
             cnt += 1
 
