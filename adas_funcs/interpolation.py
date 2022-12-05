@@ -27,7 +27,7 @@ def interpolate(annotation_path, file_id):
                 "label_file_id": inst["label_file_id"],
                 "frame_number": 0,
                 "number": inst["frame_number"],
-                "points": inst["points"]
+                "points": inst["points"],
             }
         ]
 
@@ -50,7 +50,7 @@ def interpolate(annotation_path, file_id):
                             "label_file_id": label_file_id,
                             "frame_number": i,
                             "number": seq_num,
-                            "points": points
+                            "points": points,
                         }
                     ]
 

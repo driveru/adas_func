@@ -9,7 +9,7 @@ class Instance:
             "name": self.name,
             "frame_number": self.frame_number,
             "type": "polygon",  # or (point, line)
-            "points": []
+            "points": [],
         }
 
         def format_point(point):

@@ -1,7 +1,7 @@
 from diffgram import Project
 
 
-def setup_project(project_name, client_id, client_secret, host = "http://localhost:8085"):
+def setup_project(project_name, client_id, client_secret, host="http://localhost:8085"):
     project = Project(
         project_string_id=project_name,
         host=host,
