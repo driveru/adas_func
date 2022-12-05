@@ -59,7 +59,7 @@ def overlaping_perc(a, b):
 
 def get_pairs(lines, img):
     pos, neg = get_groups(
-        sorted(lines, key = lambda x: min(x[0], x[2]) + abs(x[0] - x[2]) // 2)
+        sorted(lines, key=lambda x: min(x[0], x[2]) + abs(x[0] - x[2]) // 2)
     )
 
     height, _ = img.shape
@@ -70,7 +70,7 @@ def get_pairs(lines, img):
 
 # делим прямые по парам для образования четырехугольника
 def get_pairs_by_group(
-    group, img, overlaping_perc_threshold = 0.50, white_pixels_threshold = 0.15
+    group, img, overlaping_perc_threshold=0.50, white_pixels_threshold=0.15
 ):
     pairs = []
     used = set()
@@ -170,7 +170,7 @@ def unite_lines(lines, height):
                 block.add(j)
                 pts = sorted(
                     [[a_x1, a_y1], [a_x2, a_y2], [b_x1, b_y1], [b_x2, b_y2]],
-                     key = lambda x: x[1]
+                    key = lambda x: x[1]
                 )
                 c_x1 = pts[0][0]
                 c_y1 = pts[0][1]
@@ -183,7 +183,7 @@ def unite_lines(lines, height):
                         c_x2,
                         c_y2,
                         get_x([[c_x1, c_y1, c_x2, c_y2]], height),
-                        get_k([[c_x1, c_y1, c_x2, c_y2]])
+                        get_k([[c_x1, c_y1, c_x2, c_y2]]),
                     ]
                 )
 
@@ -231,7 +231,7 @@ def min_dist_between_lines(a, b):
             ),
             distance_between_point_and_lines(
                 [[b_x1, b_y1], [b_x2, b_y2]], [a_x2, a_y2]
-            )
+            ),
         ]
     )
 
@@ -269,11 +269,11 @@ def create_bounding_box(a, b):
 
     left_upper = [
         math.ceil(min([a_x1, a_x2, b_x1, b_x2])),
-        math.ceil(max([a_y1, a_y2, b_y1, b_y2]))
+        math.ceil(max([a_y1, a_y2, b_y1, b_y2])),
     ]
     right_bottom = [
         math.ceil(max([a_x1, a_x2, b_x1, b_x2])),
-        math.ceil(min([a_y1, a_y2, b_y1, b_y2]))
+        math.ceil(min([a_y1, a_y2, b_y1, b_y2])),
     ]
 
     return [left_upper, right_bottom]
@@ -292,7 +292,7 @@ def is_inside(point, vertices):
             vertices[i][0],
             vertices[i][1],
             None,
-            None
+            None,
         ]
         if check_intersection(a, b):
             cnt += 1

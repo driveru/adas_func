@@ -6,7 +6,7 @@ def setup_project(project_name, client_id, client_secret, host = "http://localho
         project_string_id=project_name,
         host=host,
         client_id=client_id,
-        client_secret=client_secret
+        client_secret=client_secret,
     )
 
     if not project:
