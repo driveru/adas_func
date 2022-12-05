@@ -171,7 +171,7 @@ def unite_lines(lines, height):
                 block.add(j)
                 pts = sorted(
                     [[a_x1, a_y1], [a_x2, a_y2], [b_x1, b_y1], [b_x2, b_y2]],
-                    key=lambda x: x[1]
+                    key=lambda x: x[1],
                 )
                 c_x1 = pts[0][0]
                 c_y1 = pts[0][1]
@@ -253,7 +253,10 @@ def check_intersection(a, b):
     if a_k == b_k:
         return False
 
-    interval = [max(min(a_x1, a_x2), min(b_x1, b_x2)), min(max(a_x1, a_x2), max(b_x1, b_x2))]
+    interval = [
+        max(min(a_x1, a_x2), min(b_x1, b_x2)),
+        min(max(a_x1, a_x2), max(b_x1, b_x2)),
+    ]
 
     a_c = a_y1 - a_k * a_x1
     b_c = b_y1 - b_k * b_x1
