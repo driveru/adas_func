@@ -1,23 +1,29 @@
 import cv2
-from lines import *
 from convert import *
 from crop_roi import crop_area
 from interpolation import interpolate
+import numpy as np
+from lines import *
 
 
-def process_video(video_path,
-                  roi_annotation_path,
-                  file_id,
-                  lower_bound=(2, 95, 1),
-                  upper_bound=(53, 190, 69),
-                  canny=(35, 16),
-                  debag=True
+def nothing(*args):
+    pass
+
+
+def process_video(
+    video_path,
+    roi_annotation_path,
+    file_id,
+    lower_bound=(2, 95, 1),
+    upper_bound=(53, 190, 69),
+    canny=(35, 16),
+    debag=True
 ):
     validate_roi(roi_annotation_path)
     validate_video(video_path)
 
-    #loading video
-    cap = cv2.VideoCapture(r"C:\Users\79042\Downloads\видео\cloudy_1.mp4")
+    # loading video
+    cap = cv2.VideoCapture(video_path)
 
     packet_map = interpolate(roi_annotation_path, file_id)
     points_map = convert_points(packet_map)

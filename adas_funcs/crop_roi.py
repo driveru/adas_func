@@ -6,7 +6,7 @@ def crop_area(img, points):
     # (1) Crop the bounding rect
     rect = cv2.boundingRect(points)
     x, y, w, h = rect
-    croped = img[y:y+h, x:x+w].copy()
+    croped = img[y : y + h, x : x + w].copy()
 
     # (2) make mask
     points = points - points.min(axis=0)
