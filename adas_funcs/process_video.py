@@ -1,9 +1,9 @@
 import cv2
+import numpy as np
+import lines as lns
 from convert import convert_points
 from crop_roi import crop_area
 from interpolation import interpolate
-import numpy as np
-import lines as lns
 
 
 def nothing(*args):
@@ -61,7 +61,6 @@ def process_video(
         cv2.createTrackbar("upper", "settings", 35, 255, nothing)
         cv2.createTrackbar("lower", "settings", 16, 255, nothing)
 
-
     frames = []
     try:
         while True:
@@ -106,7 +105,7 @@ def process_video(
             img_blur = cv2.GaussianBlur(hls, (5, 5), 0)
 
             # finding edges using canny
-            canny = cv2.Canny(img_blur, upper, lower) #175, 40
+            canny = cv2.Canny(img_blur, upper, lower) 
 
             img_bitwise = cv2.bitwise_and(canny, thresh)
 
