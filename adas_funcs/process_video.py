@@ -1,6 +1,6 @@
 import cv2
-import numpy as np
 import lines as lns
+import numpy as np
 from convert import convert_points
 from crop_roi import crop_area
 from interpolation import interpolate
@@ -105,7 +105,7 @@ def process_video(
             img_blur = cv2.GaussianBlur(hls, (5, 5), 0)
 
             # finding edges using canny
-            canny = cv2.Canny(img_blur, upper, lower) 
+            canny = cv2.Canny(img_blur, upper, lower)
 
             img_bitwise = cv2.bitwise_and(canny, thresh)
 
