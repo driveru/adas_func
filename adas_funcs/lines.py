@@ -216,8 +216,8 @@ def min_dist_between_lines(a, b):
     if is_intersect:
         return 0
 
-    a_x1, a_y1, a_x2, a_y2, a_x, a_k = a
-    b_x1, b_y1, b_x2, b_y2, b_x, b_k = b
+    a_x1, a_y1, a_x2, a_y2, _, _ = a
+    b_x1, b_y1, b_x2, b_y2, _, _ = b
 
     dist = min(
         [

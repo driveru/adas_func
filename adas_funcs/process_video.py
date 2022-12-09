@@ -1,9 +1,9 @@
 import cv2
-from convert import *
+from convert import convert_points
 from crop_roi import crop_area
 from interpolation import interpolate
 import numpy as np
-from lines import *
+import lines as lns
 
 
 def nothing(*args):
@@ -17,7 +17,7 @@ def process_video(
     lower_bound=(2, 95, 1),
     upper_bound=(53, 190, 69),
     canny=(35, 16),
-    debag=True
+    debag=True,
 ):
     validate_roi(roi_annotation_path)
     validate_video(video_path)
@@ -51,15 +51,15 @@ def process_video(
     if debag:
         cv2.resizeWindow("settings", 480, 100)
         # inRange params
-        cv2.createTrackbar("h1", "settings", h1, 255, nothing) #2
-        cv2.createTrackbar("l1", "settings", l1, 255, nothing) #95
-        cv2.createTrackbar("s1", "settings", s1, 255, nothing) #111
-        cv2.createTrackbar("h2", "settings", h2, 255, nothing) #143
-        cv2.createTrackbar("l2", "settings", l2, 255, nothing) #152
-        cv2.createTrackbar("s2", "settings", s2, 255, nothing) #186
+        cv2.createTrackbar("h1", "settings", h1, 255, nothing)
+        cv2.createTrackbar("l1", "settings", l1, 255, nothing)
+        cv2.createTrackbar("s1", "settings", s1, 255, nothing)
+        cv2.createTrackbar("h2", "settings", h2, 255, nothing)
+        cv2.createTrackbar("l2", "settings", l2, 255, nothing)
+        cv2.createTrackbar("s2", "settings", s2, 255, nothing)
         # canny params
-        cv2.createTrackbar("upper", "settings", 35, 255, nothing) #40
-        cv2.createTrackbar("lower", "settings", 16, 255, nothing) #65
+        cv2.createTrackbar("upper", "settings", 35, 255, nothing)
+        cv2.createTrackbar("lower", "settings", 16, 255, nothing)
 
 
     frames = []
@@ -77,11 +77,9 @@ def process_video(
 
             # flip image to work with coordinates
             img_flip = cv2.flip(img_croped, 0)
+
             # convert to hls color space
             hls = cv2.cvtColor(img_flip, cv2.COLOR_BGR2HLS)
-
-            # creting a copy of image to draw lines
-            img_copy = img_flip.copy()
 
             if debag:
                 # setting the inRange params up
@@ -116,12 +114,12 @@ def process_video(
             kernel = cv2.getStructuringElement(
                 kernel_shape,
                 (2 * kernel_size_dil + 1, 2 * kernel_size_dil + 1),
-                (kernel_size_dil, kernel_size_dil)
+                (kernel_size_dil, kernel_size_dil),
             )
             kernel_erode = cv2.getStructuringElement(
                 kernel_shape,
                 (2 * kernel_size_erode + 1, 2 * kernel_size_erode + 1),
-                (kernel_size_erode, kernel_size_erode)
+                (kernel_size_erode, kernel_size_erode),
             )
 
             dilatation_dst = cv2.dilate(img_bitwise, kernel)
@@ -130,12 +128,19 @@ def process_video(
             # Run Hough on edge detected image
             # Output "lines" is an array containing endpoints of
             # detected line segments
-            lines = cv2.HoughLinesP(erode_dst, rho, theta, threshold,
-                                    np.array([]), min_line_length, max_line_gap)
+            lines = cv2.HoughLinesP(
+                erode_dst,
+                rho,
+                theta,
+                threshold,
+                np.array([]),
+                min_line_length,
+                max_line_gap,
+            )
 
             height, width, _ = img_flip.shape
-            marking = select_lines(lines, 3200, height)
-            polygons = get_polygons(marking, erode_dst)
+            marking = lns.select_lines(lines, width, height)
+            polygons = lns.get_polygons(marking, erode_dst)
 
             img = cv2.flip(img, 0)
             cv2.polylines(img, polygons, True, (255, 0, 255), 2)
@@ -147,7 +152,7 @@ def process_video(
             if ch == 27:
                 break
             if ch == 13:
-                cv2.imwrite(f"frame_{frame_number - 1}.png", img2)
+                cv2.imwrite(f"frame_{frame_number - 1}.png", img)
 
     except Exception as e:
         print(e)
@@ -162,12 +167,12 @@ def validate_video(video_path):
         cap = cv2.VideoCapture(video_path)
         cap.read()
         cap.release()
-    except Exception as e:
+    except Exception:
         raise Exception("Exception while validating video file")
 
 
 def validate_roi(annotation_path):
     try:
         open(annotation_path)
-    except Exception as e:
+    except Exception:
         raise Exception("Exception while validating roi annotation file")

@@ -9,5 +9,5 @@ def start_test_cloudy_1():
     process_video(video_path, annotation_path, file_id, debag=False)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     start_test_cloudy_1()
