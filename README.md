@@ -6,7 +6,7 @@ Repository contains utils to detect road marking edges
 - opencv (>= 4.4.0)
 - python (>= 3.8)
 
-## Start test
+## How to run test
 ```bash
 git clone https://github.com/driveru/road_marking_detection
 cd road_marking_detection/adas_funcs
